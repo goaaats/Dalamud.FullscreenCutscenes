@@ -42,7 +42,7 @@ namespace Dalamud.FullscreenCutscenes
 
             if (targetScanner.TryScanText("4C 8B DC 55 48 8B EC", out var ptr))
             {
-                this.updateLetterboxingHook = new Hook<UpdateLetterboxingDelegate>(ptr, UpdateLetterboxingDetour);
+                this.updateLetterboxingHook = Hook<UpdateLetterboxingDelegate>.FromAddress(ptr, UpdateLetterboxingDetour);
                 this.updateLetterboxingHook.Enable();
             }
 
