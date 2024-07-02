@@ -18,15 +18,15 @@ namespace Dalamud.FullscreenCutscenes
 
         private Hook<UpdateLetterboxingDelegate>? updateLetterboxingHook;
 
-        private DalamudPluginInterface PluginInterface { get; init; }
+        private IDalamudPluginInterface PluginInterface { get; init; }
         private ICommandManager CommandManager { get; init; }
         private Configuration Configuration { get; init; }
 
         public Plugin(
-            [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
-            [RequiredVersion("1.0")] ICommandManager commandManager,
-            [RequiredVersion("1.0")] ISigScanner targetScanner,
-            [RequiredVersion("1.0")] IGameInteropProvider gameInteropProvider)
+            IDalamudPluginInterface pluginInterface,
+            ICommandManager commandManager,
+            ISigScanner targetScanner,
+            IGameInteropProvider gameInteropProvider)
         {
             this.PluginInterface = pluginInterface;
             this.CommandManager = commandManager;
