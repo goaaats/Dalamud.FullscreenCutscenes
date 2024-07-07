@@ -2,6 +2,7 @@
 using Dalamud.Game.Command;
 using Dalamud.Plugin;
 using Dalamud.Game;
+using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 
@@ -20,14 +21,17 @@ namespace Dalamud.FullscreenCutscenes
         private IDalamudPluginInterface PluginInterface { get; init; }
         private ICommandManager CommandManager { get; init; }   
         private Configuration Configuration { get; init; }
+        private ICondition Condition { get; init; }
         public Plugin(
              IDalamudPluginInterface pluginInterface,
              ICommandManager commandManager,
              ISigScanner targetScanner,
-             IGameInteropProvider gameInteropProvider)
+             IGameInteropProvider gameInteropProvider,
+             ICondition condition)
         {
             this.PluginInterface = pluginInterface;
             this.CommandManager = commandManager;
+            this.Condition = condition;
 
             this.Configuration = this.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             this.Configuration.Initialize(this.PluginInterface);
@@ -52,7 +56,9 @@ namespace Dalamud.FullscreenCutscenes
 
         private unsafe nint UpdateLetterboxingDetour(nint thisptr)
         {
-            if (this.Configuration.IsEnabled)
+            bool isWatchingCutscene = Condition[ConditionFlag.OccupiedInCutSceneEvent] ||
+                                      Condition[ConditionFlag.WatchingCutscene78];
+            if (this.Configuration.IsEnabled && isWatchingCutscene)
             {
                 SomeConfig* config = (SomeConfig*) thisptr;
                 config->ShouldLetterBox &= ~(1 << 5);
