@@ -1,8 +1,8 @@
-﻿using System;
+﻿using System.Runtime.InteropServices;
 using Dalamud.Game.Command;
-using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Game;
+using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
 
@@ -14,22 +14,24 @@ namespace Dalamud.FullscreenCutscenes
 
         private const string commandName = "/pcutscenes";
 
-        private delegate IntPtr UpdateLetterboxingDelegate(IntPtr thisPtr);
+        private delegate nint UpdateLetterboxingDelegate(nint thisPtr);
 
         private Hook<UpdateLetterboxingDelegate>? updateLetterboxingHook;
 
-        private DalamudPluginInterface PluginInterface { get; init; }
-        private ICommandManager CommandManager { get; init; }
+        private IDalamudPluginInterface PluginInterface { get; init; }
+        private ICommandManager CommandManager { get; init; }   
         private Configuration Configuration { get; init; }
-
+        private ICondition Condition { get; init; }
         public Plugin(
-            [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
-            [RequiredVersion("1.0")] ICommandManager commandManager,
-            [RequiredVersion("1.0")] ISigScanner targetScanner,
-            [RequiredVersion("1.0")] IGameInteropProvider gameInteropProvider)
+             IDalamudPluginInterface pluginInterface,
+             ICommandManager commandManager,
+             ISigScanner targetScanner,
+             IGameInteropProvider gameInteropProvider,
+             ICondition condition)
         {
             this.PluginInterface = pluginInterface;
             this.CommandManager = commandManager;
+            this.Condition = condition;
 
             this.Configuration = this.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             this.Configuration.Initialize(this.PluginInterface);
@@ -42,7 +44,7 @@ namespace Dalamud.FullscreenCutscenes
                 HelpMessage = "A useful message to display in /xlhelp"
             });
 
-            if (targetScanner.TryScanText("4C 8B DC 55 48 8B EC", out var ptr))
+            if (targetScanner.TryScanText("E8 ?? ?? ?? ?? 48 8B 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 8B 8B ?? ?? ?? ??", out var ptr))
             {
                 this.updateLetterboxingHook = gameInteropProvider.HookFromAddress<UpdateLetterboxingDelegate>(ptr, UpdateLetterboxingDetour);
                 this.updateLetterboxingHook.Enable();
@@ -52,10 +54,15 @@ namespace Dalamud.FullscreenCutscenes
             //this.PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
         }
 
-        private IntPtr UpdateLetterboxingDetour(IntPtr thisptr)
+        private unsafe nint UpdateLetterboxingDetour(nint thisptr)
         {
-            if (this.Configuration.IsEnabled)
-                return IntPtr.Zero;
+            bool isWatchingCutscene = Condition[ConditionFlag.OccupiedInCutSceneEvent] ||
+                                      Condition[ConditionFlag.WatchingCutscene78];
+            if (this.Configuration.IsEnabled && isWatchingCutscene)
+            {
+                SomeConfig* config = (SomeConfig*) thisptr;
+                config->ShouldLetterBox &= ~(1 << 5);
+            }
 
             return this.updateLetterboxingHook!.Original(thisptr);
         }
@@ -78,6 +85,12 @@ namespace Dalamud.FullscreenCutscenes
             }
 
             this.Configuration.Save();
+        }
+        
+        [StructLayout(LayoutKind.Explicit)]
+        public partial struct SomeConfig
+        {
+            [FieldOffset(0x40)] public int ShouldLetterBox;
         }
     }
 }
