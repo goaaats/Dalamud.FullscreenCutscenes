@@ -1,47 +1,42 @@
-# SamplePlugin
+# Ultrawide Cutscenes
 
-Simple example plugin for Dalamud.
+Dalamud plugin that removes the letterbox bars from Final Fantasy XIV cutscenes on ultrawide monitors.
 
-This is not designed to be the simplest possible example, but it is also not designed to cover everything you might want to do. For more detailed questions, come ask in [the Discord](https://discord.gg/3NMcUV5).
+This can reveal content outside the intended 16:9 frame, including NPCs or scene elements that are normally hidden.
 
-## Main Points
+## Building
 
-* Simple functional plugin
-  * Slash command
-  * Main UI
-  * Settings UI
-  * Image loading
-  * Plugin json
-* Simple, slightly-improved plugin configuration handling
-* Project organization
-  * Copies all necessary plugin files to the output directory
-    * Does not copy dependencies that are provided by dalamud
-    * Output directory can be zipped directly and have exactly what is required
-  * Hides data files from visual studio to reduce clutter
-    * Also allows having data files in different paths than VS would usually allow if done in the IDE directly
+1. Install the Dalamud development environment.
+2. Open `Dalamud.FullscreenCutscenes.sln` in Visual Studio, Rider, or another C# IDE.
+3. Build the solution.
 
+The debug plugin DLL is written to:
 
-The intention is less that any of this is used directly in other projects, and more to show how similar things can be done.
+```text
+Dalamud.FullscreenCutscenes/bin/x64/Debug/Dalamud.FullscreenCutscenes.dll
+```
 
-## To Use
-### Building
+## Loading In Dalamud
 
-1. Open up `SamplePlugin.sln` in your C# editor of choice (likely [Visual Studio 2022](https://visualstudio.microsoft.com) or [JetBrains Rider](https://www.jetbrains.com/rider/)).
-2. Build the solution. By default, this will build a `Debug` build, but you can switch to `Release` in your IDE.
-3. The resulting plugin can be found at `SamplePlugin/obj/x64/Debug/SamplePlugin.dll` (or `Release` if appropriate.)
+1. Launch the game.
+2. Open Dalamud settings with `/xlsettings`.
+3. Under `Experimental`, add the full path to the built `Dalamud.FullscreenCutscenes.dll` as a dev plugin location.
+4. Open the plugin installer with `/xlplugins`.
+5. Enable `Ultrawide Cutscenes` from `Dev Tools > Installed Dev Plugins`.
 
-### Activating in-game
+## Usage
 
-1. Launch the game and use `/xlsettings` in chat or `xlsettings` in the Dalamud Console to open up the Dalamud settings.
-    * In here, go to `Experimental`, and add the full path to the `SamplePlugin.dll` to the list of Dev Plugin Locations.
-2. Next, use `/xlplugins` (chat) or `xlplugins` (console) to open up the Plugin Installer.
-    * In here, go to `Dev Tools > Installed Dev Plugins`, and the `SamplePlugin` should be visible. Enable it.
-3. You should now be able to use `/pmycommand` (chat) or `pmycommand` (console)!
+Use `/pcutscenes` to toggle the plugin on or off.
 
-Note that you only need to add it to the Dev Plugin Locations once (Step 1); it is preserved afterwards. You can disable, enable, or load your plugin on startup through the Plugin Installer.
+You can also pass an explicit boolean value:
 
-### Reconfiguring for your own uses
+```text
+/pcutscenes true
+/pcutscenes false
+```
 
-Basically, just replace all references to `SamplePlugin` in all of the files and filenames with your desired name. You'll figure it out 😁
+The Dalamud config window exposes the same setting as a checkbox.
 
-Dalamud will load the JSON file (by default, `Data/SamplePlugin.json`) next to your DLL and use it for metadata, including the description for your plugin in the Plugin Installer. Make sure to update this with information relevant to _your_ plugin!
+## Credits
+
+Thanks to aers for finding this.

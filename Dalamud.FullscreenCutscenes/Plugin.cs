@@ -1,16 +1,16 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 using Dalamud.Game.Command;
 using Dalamud.Plugin;
 using Dalamud.Game;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Hooking;
 using Dalamud.Plugin.Services;
+using Dalamud.Interface.Windowing;
 
 namespace Dalamud.FullscreenCutscenes
 {
     public sealed class Plugin : IDalamudPlugin
     {
-        public string Name => "Ultrawide Cutscenes";
 
         private const string commandName = "/pcutscenes";
 
@@ -22,6 +22,8 @@ namespace Dalamud.FullscreenCutscenes
         private ICommandManager CommandManager { get; init; }   
         private Configuration Configuration { get; init; }
         private ICondition Condition { get; init; }
+        private readonly WindowSystem WindowSystem = new("Dalamud.FullscreenCutscenes");
+        private ConfigWindow ConfigWindow { get; init; }
         public Plugin(
              IDalamudPluginInterface pluginInterface,
              ICommandManager commandManager,
@@ -50,8 +52,17 @@ namespace Dalamud.FullscreenCutscenes
                 this.updateLetterboxingHook.Enable();
             }
 
-            //this.PluginInterface.UiBuilder.Draw += DrawUI;
-            //this.PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
+            this.ConfigWindow = new ConfigWindow(this.Configuration);
+            this.WindowSystem.AddWindow(this.ConfigWindow);
+
+            this.PluginInterface.UiBuilder.Draw += this.WindowSystem.Draw;
+            this.PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
+            this.PluginInterface.UiBuilder.OpenMainUi += DrawConfigUI;
+        }
+
+        private void DrawConfigUI()
+        {
+            this.ConfigWindow.IsOpen = true;
         }
 
         private unsafe nint UpdateLetterboxingDetour(nint thisptr)
@@ -69,7 +80,12 @@ namespace Dalamud.FullscreenCutscenes
 
         public void Dispose()
         {
+            this.WindowSystem.RemoveAllWindows();
+            this.PluginInterface.UiBuilder.Draw -= this.WindowSystem.Draw;
+            this.PluginInterface.UiBuilder.OpenConfigUi -= DrawConfigUI;
+            this.PluginInterface.UiBuilder.OpenMainUi -= DrawConfigUI;
             this.updateLetterboxingHook?.Disable();
+            this.updateLetterboxingHook?.Dispose();
             this.CommandManager.RemoveHandler(commandName);
         }
 
